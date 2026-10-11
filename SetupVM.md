@@ -29,9 +29,9 @@ This guide explains how to set up an isolated cybersecurity practice lab on an A
 4. Select **Linux**.
 5. Choose the downloaded Kali Linux ARM64 ISO.
 6. Allocate the following resources:
-   - RAM: 4–6 GB
+   - RAM: 4 GB
    - CPU cores: 4
-   - Disk space: 40–50 GB
+   - Disk space: 64 GB
 7. Complete the VM creation wizard.
 
 ### 3. Troubleshoot the installer display
