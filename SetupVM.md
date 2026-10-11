@@ -132,54 +132,175 @@ Replace the example directory path and filename with the actual location and nam
 
 ## Step 3: Configure Isolated Networking
 
-### 1. Configure both VMs
+### Goal
 
-Open the settings for Kali Linux and Metasploitable 2.
+Create a private cybersecurity lab where Kali Linux can communicate with Metasploitable 2 without exposing the vulnerable target to the internet or the normal home network.
 
-Configure both VMs to use a network arrangement that allows them to communicate with each other without exposing Metasploitable 2 to the public internet.
+Kali does not need internet access for basic lab exercises. Internet access is optional and useful for updates, installing tools, and researching documentation.
 
-Preferred options include:
+### 3.1 Configure Networking in UTM
 
-- An isolated virtual network supported by your UTM version
-- A host-only network, if available and configured appropriately
+Shut down both virtual machines before changing their network settings.
 
-Do not assume that ordinary shared networking or bridged networking is isolated. Verify the actual network configuration before testing.
+#### Kali Linux
 
-### 2. Start both virtual machines
+1. Open UTM and select the Kali Linux VM.
+2. Open its settings and locate **Network**.
+3. Configure one network adapter for the private lab network (**Host Only** or the equivalent custom host network option available in your UTM configuration).
+4. Optionally add a second adapter using **Shared Network (NAT)** if Kali needs internet access.
+5. Do not use Bridged networking for the lab.
 
-1. Start Kali Linux.
-2. Start Metasploitable 2.
-3. Log in to both systems.
+#### Metasploitable 2
 
-### 3. Find Metasploitable's IP address
+1. Open UTM and select the Metasploitable 2 VM.
+2. Open its settings and locate **Network**.
+3. Configure its only network adapter to use the same private lab network as Kali.
+4. Do not attach Metasploitable 2 to Shared Network (NAT) or Bridged networking.
 
-On Metasploitable 2, run:
+**Important:** Both VMs must use the same private network. UTM's available modes vary by configuration, so verify that the selected network actually isolates the target. Selecting Host Only does not necessarily create a host interface or automatically assign IP addresses.
 
-```bash
-ifconfig
-```
+### 3.2 Plan the Lab IP Addresses
 
-Look for the IP address assigned to its active network interface.
+Use the following example addresses if the private network is configured for `192.168.50.0/24` and the addresses are available.
 
-On Kali Linux, inspect its network interfaces:
+| Device | IP address | Subnet mask |
+|---|---|---|
+| Kali lab adapter | `192.168.50.10` | `255.255.255.0` |
+| Metasploitable 2 lab adapter | `192.168.50.20` | `255.255.255.0` |
+| Optional Mac host interface | `192.168.50.1` | `255.255.255.0` |
 
-```bash
-ip addr
-```
+The Mac address is optional and should be assigned only if UTM's private network provides a host interface on that subnet.
 
-Check that both machines are on the intended virtual subnet.
+- Keep the Mac's normal Wi-Fi address unchanged. Its current network uses the `10.0.0.x` subnet.
+- Leave the gateway and DNS blank on the lab adapters.
+- Do not use these example addresses until you confirm the actual private network's subnet and available addresses.
+- Configure the addresses on the correct lab interfaces, not on unrelated network adapters.
 
-### 4. Test connectivity
+### 3.3 Configure a Manual IP Address in Kali Linux
 
-From Kali Linux, ping Metasploitable's IP address:
+1. Start Kali Linux and log in.
+2. Open Terminal and run:
 
-```bash
-ping -c 4 <METASPLOITABLE_IP>
-```
+   ```bash
+   ip addr
+   ```
 
-Replace `<METASPLOITABLE_IP>` with the actual IP address.
+3. Identify the interface connected to the private lab network. It may be named `eth0`, `enp0s1`, `ens3`, or something else.
+4. Open Kali's network settings from the desktop.
+5. Find the wired connection for the lab adapter and open its settings.
+6. Select the **IPv4** tab.
+7. Change the IPv4 method to **Manual**.
+8. Add the following settings:
 
-If the machines cannot communicate, check their network modes, virtual network assignments, and IP addresses.
+   - **Address:** `192.168.50.10`
+   - **Netmask:** `255.255.255.0`
+   - **Gateway:** Leave blank
+   - **DNS:** Leave blank
+
+9. Click **Apply** and reconnect the lab connection if necessary.
+10. Run `ip addr` again to confirm that the address was applied to the correct interface.
+
+If your desktop environment does not offer these settings, identify the interface first and configure it using the network-management tools available in your Kali installation.
+
+### 3.4 Configure a Manual IP Address in Metasploitable 2
+
+1. Start Metasploitable 2.
+2. Log in using the default lab credentials:
+
+   - **Username:** `msfadmin`
+   - **Password:** `msfadmin`
+
+3. Identify its network interfaces:
+
+   ```bash
+   ifconfig
+   ```
+
+4. Find the interface connected to the private lab network. It is commonly named `eth0`, but verify this before continuing.
+5. For a temporary IP configuration, run the following command, replacing `eth0` if your interface has a different name:
+
+   ```bash
+   sudo ifconfig eth0 192.168.50.20 netmask 255.255.255.0 up
+   ```
+
+6. Verify the address:
+
+   ```bash
+   ifconfig
+   ```
+
+This command configures a temporary address. The setting may disappear after reboot. Configure a persistent address only after confirming the interface and network settings.
+
+### 3.5 Test Connectivity Between the VMs
+
+1. Start both VMs and ensure their private lab adapters are connected.
+2. In Kali, verify the lab interface:
+
+   ```bash
+   ip addr
+   ```
+
+3. Ping Metasploitable 2:
+
+   ```bash
+   ping -c 4 192.168.50.20
+   ```
+
+4. If replies arrive, Kali can reach Metasploitable 2 over the private network.
+
+If the ping fails, check the following:
+
+- Both VMs are running.
+- Both adapters use the same private network.
+- The actual network subnet matches the example addresses.
+- The IP addresses are configured on the correct interfaces.
+- No other device is using either address.
+
+If the addresses appear correct but the connection still fails, inspect UTM's network configuration before changing more settings.
+
+### 3.6 Optional: Enable Internet Access for Kali
+
+Internet access is **not required** for basic practice against Metasploitable 2.
+
+It can be useful for:
+
+- Updating Kali Linux.
+- Installing additional packages and tools.
+- Accessing cybersecurity documentation.
+
+If internet access is needed:
+
+1. Shut down Kali.
+2. Open its UTM settings.
+3. Keep its private lab adapter connected.
+4. Add or enable a separate **Shared Network (NAT)** adapter.
+5. Start Kali and test internet connectivity:
+
+   ```bash
+   ping -c 4 1.1.1.1
+   ```
+
+6. Test DNS resolution:
+
+   ```bash
+   ping -c 4 google.com
+   ```
+
+If the first test works but the second fails, investigate DNS configuration.
+
+Keep the private lab adapter for communication with Metasploitable 2. Do not add an internet-facing adapter to Metasploitable 2.
+
+### 3.7 Security Checklist
+
+- [ ] Kali and Metasploitable 2 use the same private lab network.
+- [ ] The private network uses a confirmed subnet that does not overlap with the normal home network.
+- [ ] Kali has the correct manual lab IP address.
+- [ ] Metasploitable 2 has the correct manual lab IP address.
+- [ ] Kali can reach Metasploitable 2 over the private network.
+- [ ] Metasploitable 2 has no Shared Network (NAT) or Bridged adapter.
+- [ ] Kali internet access is optional and uses a separate adapter.
+- [ ] Any optional Mac host address is configured only when UTM provides a compatible host interface.
+- [ ] The lab's isolation has been verified before beginning security exercises.
 
 ---
 
