@@ -7,7 +7,7 @@ This guide explains how to set up an isolated cybersecurity practice lab on an A
 
 | Virtual Machine | RAM | CPU Cores | Disk Space | Architecture |
 |---|---:|---:|---:|---|
-| Kali Linux | 4–6 GB | 4 | 40–50 GB | ARM64 |
+| Kali Linux | 4 GB | 4 | 64 GB | ARM64 |
 | Metasploitable 2 | 1 GB | 1 | 10 GB | x86 (emulated) |
 
 **Important:** Metasploitable 2 is intentionally vulnerable. Keep it isolated from public networks and use it only in your own lab.
